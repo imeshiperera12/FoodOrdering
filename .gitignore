@@ -1,0 +1,21 @@
+# Node.js and npm
+node_modules/
+
+# Logs
+*.log
+*.log.*
+
+# Environment Files
+.env
+
+# Docker Files
+docker-compose.yml
+Dockerfile
+
+# Build files
+/dist
+/build
+
+# IDE-specific
+.vscode/
+.idea/
