@@ -1,15 +1,24 @@
 version: '3.8'
+
 services:
   order-service:
-    build: ./order-service 
+    build: ./order-service
     ports:
       - "5001:5001"
-    environment:
-      - MONGO_URI=mongodb+srv://imeshiperera18:Imeshi200014*@foodorder.6csf07w.mongodb.net/
-    depends_on:
-      - mongo
+    env_file:
+      - ./order-service/.env
+    networks:
+      - microservices-network
 
-  mongo:
-    image: mongo
+  payment-service:
+    build:
+      context: ./payment-service
     ports:
-      - "27017:27017"
+      - "5004:5004"
+    env_file:
+      - ./payment-service/.env
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
