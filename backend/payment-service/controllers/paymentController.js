@@ -1,4 +1,4 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = require('../config/stripe');
 const Payment = require('../models/paymentModel');
 
 // Create a payment intent and store record
