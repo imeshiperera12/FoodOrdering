@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  order-service:
+    build: ./order-service
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./order-service/.env
+    networks:
+      - microservices-network
+
+  payment-service:
+    build:
+      context: ./payment-service
+    ports:
+      - "5004:5004"
+    env_file:
+      - ./payment-service/.env
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
