@@ -34,5 +34,19 @@ services:
     networks:
       - microservices-network
 
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    ports:
+      - "5007:5007"
+    env_file:
+      - ./auth-service/.env
+    volumes:
+      - ./auth-service:/app
+    working_dir: /app
+    restart: always
+    networks:
+      - microservices-network
+
 networks:
   microservices-network:
