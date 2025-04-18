@@ -48,5 +48,19 @@ services:
     networks:
       - microservices-network
 
+  delivery-service:
+    build: ./delivery-service
+    container_name: delivery-service
+    ports:
+      - "5010:5010"
+    env_file:
+      - ./delivery-service/.env
+    volumes:
+      - ./delivery-service:/app
+    working_dir: /app
+    restart: always
+    networks:
+      - microservices-network
+
 networks:
   microservices-network:
