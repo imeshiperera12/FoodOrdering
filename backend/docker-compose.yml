@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   order-service:
@@ -17,6 +17,20 @@ services:
       - "5004:5004"
     env_file:
       - ./payment-service/.env
+    networks:
+      - microservices-network
+
+  restaurant-service:
+    build: ./restaurant-service
+    container_name: restaurant-service
+    ports:
+      - "5008:5008"
+    env_file:
+      - ./restaurant-service/.env
+    volumes:
+      - ./restaurant-service:/app
+    working_dir: /app
+    restart: always
     networks:
       - microservices-network
 
