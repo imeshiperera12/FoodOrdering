@@ -4,6 +4,8 @@ import {
   getDeliveriesByPerson,
   updateDeliveryLocation,
   updateDeliveryStatus,
+  getDeliveryById,
+  trackDeliveryByOrderId
 } from "../controllers/deliveryController.js";
 
 const deliveryRoutes = express.Router();
@@ -12,5 +14,7 @@ deliveryRoutes.post("/assign", assignDelivery);
 deliveryRoutes.get("/driver/:deliveryPersonId", getDeliveriesByPerson);
 deliveryRoutes.put("/status/:deliveryId", updateDeliveryStatus);
 deliveryRoutes.put("/location/:deliveryId", updateDeliveryLocation);
+deliveryRoutes.get("/:deliveryId", getDeliveryById);
+deliveryRoutes.get("/track/:orderId", trackDeliveryByOrderId);
 
 export default deliveryRoutes;
