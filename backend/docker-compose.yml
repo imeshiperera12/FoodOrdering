@@ -62,5 +62,19 @@ services:
     networks:
       - microservices-network
 
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    ports:
+      - "5003:5003"
+    env_file:
+      - ./notification-service/.env
+    volumes:
+      - ./notification-service:/app
+    working_dir: /app
+    restart: always
+    networks:
+      - microservices-network
+
 networks:
   microservices-network:
