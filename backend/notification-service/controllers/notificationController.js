@@ -8,7 +8,7 @@ export const createNotification = async (req, res) => {
     const { userId, type, content } = req.body;
 
     // Get user info from auth-service
-    const userResponse = await axios.get(`http://auth-service:5007/api/users/${userId}`);
+    const userResponse = await axios.get(`http://auth-service:5007/api/auth/${userId}`);
     const user = userResponse.data;
 
     const notification = new Notification({
