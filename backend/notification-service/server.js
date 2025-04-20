@@ -5,6 +5,7 @@ import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import { createNotificationFromSocket } from "./controllers/notificationController.js";
 
 dotenv.config();
 
@@ -13,8 +14,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
 });
 
 // Middleware
@@ -23,36 +24,59 @@ app.use(express.json());
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI || "mongodb://localhost:27017/notificationservice")
+  .connect(
+    process.env.MONGO_URI || "mongodb://localhost:27017/notificationservice"
+  )
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection failed:", err));
 
 // WebSocket connection
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-  
+  console.log("Client connected to notification service:", socket.id);
+
   // Join a room based on userId
   socket.on("join", (userId) => {
     socket.join(userId);
     console.log(`User ${userId} joined their room`);
   });
-  
+
   // Listen for order updates
-  socket.on("orderUpdate", (data) => {
+  socket.on("orderUpdate", async (data) => {
     // Broadcast to specific user
     io.to(data.userId).emit("orderStatusUpdate", data);
     console.log(`Order update sent to user ${data.userId}`);
+
+    // Also create a notification record
+    await createNotificationFromSocket({
+      userId: data.userId,
+      type: "push",
+      content: `Your order #${data.orderId} status is now: ${data.status}`,
+    });
   });
-  
+
   // Listen for delivery location updates
-  socket.on("locationUpdate", (data) => {
+  socket.on("locationUpdate", async (data) => {
     // Broadcast to specific user
     io.to(data.userId).emit("deliveryLocationUpdate", data);
     console.log(`Location update sent to user ${data.userId}`);
   });
-  
+
+  // Listen for payment updates
+  socket.on("paymentUpdate", async (data) => {
+    // Broadcast to specific user
+    io.to(data.userId).emit("paymentStatusUpdate", data);
+    console.log(`Payment update sent to user ${data.userId}`);
+
+    // Also create a notification record
+    await createNotificationFromSocket({
+      userId: data.userId,
+      type: "push",
+      content: `Your payment for order #${data.orderId} status is now: ${data.status}`,
+    });
+  });
+
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+    console.log("Client disconnected from notification service:", socket.id);
   });
 });
 
@@ -63,4 +87,6 @@ app.use("/api/notifications", notificationRoutes);
 export { io };
 
 const PORT = process.env.PORT || 5003;
-server.listen(PORT, () => console.log(`Notification Service running on port ${PORT}`));
+server.listen(PORT, () =>
+  console.log(`Notification Service running on port ${PORT}`)
+);
