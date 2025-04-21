@@ -38,7 +38,7 @@ export const assignDelivery = async (req, res) => {
 
     await sendNotification(
       deliveryPersonId,
-      "sms",
+      "email",
       `New delivery assigned: Order #${orderId.substring(
         0,
         8
@@ -51,6 +51,12 @@ export const assignDelivery = async (req, res) => {
       "push",
       `Your order has been assigned to a delivery person`
     );
+
+    await sendNotification(
+      userId,
+      "email",
+      `Your order #${orderId.substring(0, 8)} has been assigned to a delivery person.`
+    );    
 
     // Emit socket event for real-time updates
     io.emit("delivery_assigned", {
@@ -100,9 +106,21 @@ export const updateDeliveryStatus = async (req, res) => {
     // Notify customer about status update
     await sendNotification(
       delivery.userId,
-      "push",
+      "email",
       `Your delivery status is now: ${status}`
     );
+    
+    await sendNotification(
+      delivery.userId,
+      "sms",
+      `Delivery update: ${status}`
+    );
+    
+    await sendNotification(
+      delivery.userId,
+      "push",
+      `Your delivery status is now: ${status}`
+    );    
 
     // Emit socket event for real-time updates
     io.to(`delivery_${deliveryId}`).emit("delivery_status_update", {
@@ -180,6 +198,19 @@ export const updateDeliveryLocation = async (req, res) => {
       location: updated.locationUpdate,
       estimatedTime: updated.estimatedTime,
     });
+
+    // Send email + SMS to customer
+    await sendNotification(
+      delivery.userId,
+      "email",
+      `🚚 Your delivery is on the way! Current location: (${lat}, ${lng})\nEstimated time of arrival: ${estimatedTime}.`
+    );
+
+    await sendNotification(
+      delivery.userId,
+      "sms",
+      `🚚 Delivery update: ETA ${estimatedTime}`
+    );
 
     res.status(200).json({ message: "Location updated", delivery: updated });
   } catch (err) {

@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: true,
-    unique: true
+    // unique: true
   },
   address: [
     addressSchema

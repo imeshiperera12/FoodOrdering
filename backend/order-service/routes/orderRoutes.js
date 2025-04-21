@@ -49,8 +49,8 @@ async function notifyServices(order, status) {
     await sendNotification(
       order.customerId,
       "sms",
-      `Order #${order._id.substring(0, 8)} update: ${status}`
-    );
+      `Order #${order._id.toString().substring(0, 8)} update: ${status}`
+    );    
     
   } catch (error) {
     console.error("Notification error:", error.message);

@@ -9,10 +9,13 @@ const client = twilio(
 
 export const sendSMS = async (to, message) => {
   try {
+    // Ensure number starts with '+'
+    const formattedTo = to.startsWith("+") ? to : `+94${to.replace(/^0+/, "")}`;
+
     const response = await client.messages.create({
       body: message,
       from: process.env.TWILIO_PHONE_NUMBER,
-      to,
+      to: formattedTo,
     });
     return { success: true, sid: response.sid };
   } catch (error) {
