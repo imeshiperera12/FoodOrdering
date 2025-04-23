@@ -15,7 +15,9 @@ async function sendNotification(userId, type, content) {
   }
 }
 
-// Assign a delivery to a delivery person
+// Assign a delivery to a delivery person  
+/*Implement a system that automatically assigns delivery 
+drivers based on order location and availability*/
 export const assignDelivery = async (req, res) => {
   try {
     const { orderId, deliveryPersonId, userId, deliveryAddress, deliveryFee } =

@@ -16,7 +16,7 @@ function authMiddleware(req, res, next) {
 
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
-      return res.status(403).json({ message: "Invalid or expired token!", err });
+      return res.status(403).json({ message: "Invalid or expired token!", err});
     }
 
     req.user = decoded;
