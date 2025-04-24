@@ -7,6 +7,23 @@ import authorizeRoles from "../middleware/authorizeRoles.js";
 
 const router = express.Router();
 
+async function getUserDetails(userId) {
+  try {
+    const response = await axios.get(`http://localhost:5007/api/auth/${userId}`);
+    const user = response.data;
+
+    return {
+      name: user.name,
+      phone: user.phone,
+      address: user.address?.[0] || null
+    };
+  } catch (error) {
+    console.error("Failed to fetch user details:", error.message);
+    return null;
+  }
+}
+
+
 // Function to send notifications
 async function sendNotification(userId, type, content) {
   try {
@@ -32,12 +49,17 @@ async function notifyServices(order, status) {
 
     // If status is "Confirmed", notify delivery service to assign a driver
     if (status === "Confirmed") {
+      const userDetails = await getUserDetails(order.customerId);
+
+      const deliveryAddress = userDetails?.address
+        ? `${userDetails.address.addressLine1}, ${userDetails.address.addressLine2}, ${userDetails.address.homeTown}, ${userDetails.address.postalCode}`
+        : "Address not available";
+
       await axios.post("http://delivery-service:5010/api/delivery/assign", {
         orderId: order._id,
         userId: order.customerId,
-        // You would need to pass more data in a real implementation
-        deliveryAddress: "Customer Address", // Should be fetched from user profile
-        deliveryFee: 2.5, // Example value
+        deliveryAddress,
+        deliveryFee: 2.5, 
       });
     }
 

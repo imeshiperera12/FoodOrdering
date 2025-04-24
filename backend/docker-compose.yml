@@ -9,6 +9,8 @@ services:
       - ./order-service/.env
     networks:
       - microservices-network
+    depends_on:
+      - auth-service
 
   payment-service:
     build:
