@@ -9,7 +9,7 @@ const router = express.Router();
 
 async function getUserDetails(userId) {
   try {
-    const response = await axios.get(`http://localhost:5007/api/auth/${userId}`);
+    const response = await axios.get(`http://auth-service:5007/api/auth/${userId}`);
     const user = response.data;
 
     return {

@@ -78,5 +78,17 @@ services:
     networks:
       - microservices-network
 
+  location-tracker:
+    build: ./location-tracker
+    container_name: location-tracker
+    ports:
+      - "5009:5009"
+    volumes:
+      - ./location-tracker:/app
+    working_dir: /app
+    restart: always
+    networks:
+      - microservices-network
+
 networks:
   microservices-network:
