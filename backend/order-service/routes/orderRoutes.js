@@ -1,5 +1,6 @@
 import express from "express";
 import Order from "../models/Order.js";
+import Review from "../models/Review.js";
 import { io } from "../server.js";
 import axios from "axios";
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -93,6 +94,107 @@ router.post(
         .json({ message: "Order placed successfully", order: newOrder });
     } catch (error) {
       res.status(500).json({ error: "Internal Server Error", details: error });
+    }
+  }
+);
+
+
+// Update order by customer
+router.put(
+  "/customer/:orderId",
+  authMiddleware,
+  authorizeRoles("customer"),
+  async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const customerId = req.user.userId;
+      const { items, totalAmount } = req.body;
+
+      // Find the order
+      const order = await Order.findById(orderId);
+      
+      // Check if order exists
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      // Check if this is the customer's order
+      if (order.customerId !== customerId) {
+        return res.status(403).json({ 
+          error: "Not authorized to update this order" 
+        });
+      }
+      
+      // Only allow updates for pending orders
+      if (order.status !== "Pending") {
+        return res.status(400).json({ 
+          error: "Cannot update order that is already confirmed or delivered" 
+        });
+      }
+      
+      // Validate items array if provided
+      if (items) {
+        if (!Array.isArray(items) || items.length === 0) {
+          return res.status(400).json({ 
+            error: "Items must be a non-empty array" 
+          });
+        }
+        
+        // Validate each item
+        for (const item of items) {
+          if (!item.name || !item.quantity || !item.price) {
+            return res.status(400).json({ 
+              error: "Each item must have name, quantity, and price" 
+            });
+          }
+          
+          if (item.quantity <= 0 || item.price <= 0) {
+            return res.status(400).json({ 
+              error: "Item quantity and price must be positive" 
+            });
+          }
+        }
+      }
+      
+      // Validate total amount if provided
+      if (totalAmount !== undefined) {
+        if (typeof totalAmount !== 'number' || totalAmount <= 0) {
+          return res.status(400).json({ 
+            error: "Total amount must be a positive number" 
+          });
+        }
+      }
+      
+      // Update the order
+      const updateData = {};
+      if (items) updateData.items = items;
+      if (totalAmount !== undefined) updateData.totalAmount = totalAmount;
+      
+      const updatedOrder = await Order.findByIdAndUpdate(
+        orderId,
+        updateData,
+        { new: true }
+      );
+      
+      // Notify services about order update
+      await notifyServices(updatedOrder, "Pending");
+      
+      // Notify customer about update
+      await sendNotification(
+        customerId,
+        "email",
+        `Your order #${orderId} has been updated successfully`
+      );
+      
+      res.status(200).json({
+        message: "Order updated successfully",
+        order: updatedOrder
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        error: "Internal Server Error", 
+        details: error.message 
+      });
     }
   }
 );
@@ -263,7 +365,6 @@ router.get(
   }
 );
 
-// Rate an order
 router.post(
   "/:orderId/rate",
   authMiddleware,
@@ -271,35 +372,62 @@ router.post(
   async (req, res) => {
     try {
       const { orderId } = req.params;
-      const { rating, review, restaurantId } = req.body;
-      const customerId = req.user.id;
+      const { rating, review } = req.body;
+      const customerId = req.user.userId;
+
+      // Validate the rating value
+      if (rating < 1 || rating > 5) {
+        return res.status(400).json({ error: "Rating must be between 1 and 5" });
+      }
+
+      // Ensure review is not empty if provided
+      if (review && review.trim() === "") {
+        return res.status(400).json({ error: "Review cannot be empty" });
+      }
 
       const order = await Order.findById(orderId);
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
       }
 
-      if (order.customerId.toString() !== customerId) {
+      if (order.customerId !== customerId) {
         return res
           .status(403)
           .json({ error: "Not authorized to rate this order" });
       }
 
-      try {
-        await axios.post("http://review-service:5005/api/reviews", {
-          customerId,
-          restaurantId: restaurantId || order.restaurantId,
-          orderId,
-          rating,
-          review,
-        });
-
-        res.status(200).json({ message: "Review submitted successfully" });
-      } catch (error) {
-        res
-          .status(500)
-          .json({ error: "Failed to submit review", details: error.message });
+      // Check if a review has already been submitted for this order
+      const existingReview = await Review.findOne({ orderId });
+      if (existingReview) {
+        return res.status(400).json({ error: "Review for this order already submitted" });
       }
+
+      // Create the review in our own service instead of making an HTTP request
+      const newReview = new Review({
+        customerId,
+        restaurantId: order.restaurantId,
+        orderId,
+        rating,
+        review
+      });
+      
+      await newReview.save();
+      
+      // Optionally, you can notify the restaurant service about the new review
+      try {
+        await axios.post("http://restaurant-service:5008/api/restaurants/notify-review", {
+          restaurantId: order.restaurantId,
+          rating,
+          reviewId: newReview._id
+        });
+      } catch (error) {
+        console.error("Failed to notify restaurant service:", error.message);
+      }
+
+      res.status(201).json({ 
+        message: "Review submitted successfully",
+        review: newReview 
+      });
     } catch (error) {
       res
         .status(500)
