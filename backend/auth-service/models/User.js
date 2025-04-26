@@ -1,23 +1,25 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+// Embedded address schema
 const addressSchema = new mongoose.Schema({
   addressLine1: { type: String, required: true },
   addressLine2: { type: String, required: true },
   homeTown: { type: String, required: true },
-  postalCode: { type: Number, required: true }
+  postalCode: { type: Number, required: true },
 });
 
+// User schema
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique : true
+    unique: true,
   },
   email: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   password: {
     type: String,
@@ -25,16 +27,13 @@ const userSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    required: true
+    required: true,
   },
   phone: {
     type: String,
     required: true,
-    // unique: true
   },
-  address: [
-    addressSchema
-  ],
+  address: [addressSchema],
   role: {
     type: String,
     enum: ['customer', 'restaurant_admin', 'delivery_person', 'admin'],
@@ -44,12 +43,19 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  favoriteRestaurants: [  
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Restaurant',
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
-  }
+  },
 });
 
+// Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);

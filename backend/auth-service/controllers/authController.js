@@ -65,3 +65,146 @@ export const login = async (req, res) => {
     res.status(500).json({ message: "Login error", error: err.message });
   }
 };
+
+// Get user's favorite restaurants
+export const getFavoriteRestaurants = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate('favoriteRestaurants');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json({ favorites: user.favoriteRestaurants });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Add restaurant to favorites
+export const addToFavorites = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { restaurantId } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { favoriteRestaurants: restaurantId } },
+      { new: true }
+    );
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json({ message: 'Restaurant added to favorites', user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Remove restaurant from favorites
+export const removeFromFavorites = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { restaurantId } = req.params;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $pull: { favoriteRestaurants: restaurantId } },
+      { new: true }
+    );
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json({ message: 'Restaurant removed from favorites', user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update user profile
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, phone, image, address } = req.body;
+    
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (image) user.image = image;
+    if (address) {
+      // Either replace entire address array or add a new address
+      if (Array.isArray(address)) {
+        user.address = address;
+      } else {
+        user.address.push(address);
+      }
+    }
+    
+    await user.save();
+    
+    // Return user without password
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    
+    res.status(200).json({ message: 'Profile updated successfully', user: userResponse });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// User management for admin
+export const getAllUsers = async (req, res) => {
+  try {
+    const { role, isActive, search } = req.query;
+    const filter = {};
+    
+    if (role) filter.role = role;
+    if (isActive !== undefined) filter.isActive = isActive === 'true';
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    const users = await User.find(filter).select('-password');
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Block/unblock user (admin only)
+export const toggleUserStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { isActive } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isActive },
+      { new: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json({ 
+      message: isActive ? 'User activated successfully' : 'User blocked successfully', 
+      user 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

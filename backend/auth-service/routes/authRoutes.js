@@ -18,4 +18,13 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+router.get('/favorites', authMiddleware, getFavoriteRestaurants);
+router.post('/favorites', authMiddleware, addToFavorites);
+router.delete('/favorites/:restaurantId', authMiddleware, removeFromFavorites);
+router.put('/profile', authMiddleware, updateProfile);
+
+// Admin routes
+router.get('/users', authMiddleware, authorizeRoles('admin'), getAllUsers);
+router.patch('/users/:userId/status', authMiddleware, authorizeRoles('admin'), toggleUserStatus);
+
 export default router;
