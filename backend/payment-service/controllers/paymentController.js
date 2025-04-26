@@ -97,8 +97,11 @@ exports.confirmPayment = async (req, res, io) => {
     try {
       await axios.put(
         `http://order-service:5001/api/orders/${payment.orderId}`,
+        { status: "Confirmed" },
         {
-          status: "Confirmed",
+          headers: {
+            Authorization: `Internal ${process.env.INTERNAL_SECRET}`,
+          },
         }
       );
     } catch (error) {

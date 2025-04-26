@@ -7,6 +7,7 @@ const {
   handlePaymentFailure,
   getRestaurantPaymentStats,
   getAdminPaymentStats,
+  processRefund,
 } = require("../controllers/paymentController");
 const authMiddleware = require("../middleware/authMiddleware");
 const authorizeRoles = require("../middleware/authorizeRoles");
