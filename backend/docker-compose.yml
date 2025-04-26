@@ -9,6 +9,8 @@ services:
       - ./order-service/.env
     networks:
       - microservices-network
+    depends_on:
+      - auth-service
 
   payment-service:
     build:
@@ -71,6 +73,18 @@ services:
       - ./notification-service/.env
     volumes:
       - ./notification-service:/app
+    working_dir: /app
+    restart: always
+    networks:
+      - microservices-network
+
+  location-tracker:
+    build: ./location-tracker
+    container_name: location-tracker
+    ports:
+      - "5009:5009"
+    volumes:
+      - ./location-tracker:/app
     working_dir: /app
     restart: always
     networks:

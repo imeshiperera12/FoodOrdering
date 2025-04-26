@@ -21,11 +21,11 @@ const deliverySchema = new mongoose.Schema({
     enum: ["assigned", "picked_up", "delivering", "delivered"],
     default: "assigned",
   },
-  locationUpdate: {
-    lat: { type: Number },
-    lng: { type: Number },
-    updatedAt: { type: Date, default: Date.now },
-  },
+  // locationUpdate: {
+  //   lat: { type: Number },
+  //   lng: { type: Number },
+  //   updatedAt: { type: Date, default: Date.now },
+  // },
   estimatedTime: { type: String },
   actualTime: { type: String },
   deliveryAddress: { type: String, required: true },
