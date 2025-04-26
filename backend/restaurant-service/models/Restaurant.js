@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+// Menu Item Schema
 const menuItemSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -18,26 +19,43 @@ const menuItemSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    require: true
+    required: true, // typo corrected: should be `required` not `require`
   },
   isAvailable: {
     type: Boolean,
     default: true,
   },
-});
+  specialNotes: {
+    type: String,
+    default: "",
+  },
+}, { _id: true });
 
+// Restaurant Schema
 const restaurantSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
   },
-  address: {
+  address: { // For location-based search
     type: String,
     required: true,
   },
   contactNumber: {
     type: String,
     required: true,
+  },
+  cuisine: { // Added for cuisine filter
+    type: String,
+    required: true,
+  },
+  rating: { // For filtering restaurants by ratings
+    type: Number,
+    default: 0,
+  },
+  reviewCount: { // To show no. of reviews
+    type: Number,
+    default: 0,
   },
   isAvailable: {
     type: Boolean,
@@ -59,5 +77,6 @@ const restaurantSchema = new mongoose.Schema({
   },
 });
 
+// Export the model
 const Restaurant = mongoose.model("Restaurant", restaurantSchema);
 export default Restaurant;

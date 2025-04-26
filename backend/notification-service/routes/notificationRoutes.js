@@ -15,4 +15,20 @@ router.put("/read/:notificationId", markAsRead);
 router.delete("/:notificationId", deleteNotification);
 router.get("/unread/:userId", getUnreadCount);
 
+// new routes
+// router.post("/subscribe", subscribeToNotifications);
+// router.post(
+//   "/batch",
+//   authMiddleware,
+//   authorizeRoles("admin"),
+//   sendBatchNotifications
+// );
+// router.put("/read/all/:userId", authMiddleware, markAllAsRead);
+// router.get(
+//   "/stats",
+//   authMiddleware,
+//   authorizeRoles("admin"),
+//   getNotificationStats
+// );
+
 export default router;
