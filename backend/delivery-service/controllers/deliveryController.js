@@ -280,3 +280,239 @@ export const trackDeliveryByOrderId = async (req, res) => {
     res.status(500).json({ message: "Error tracking delivery", error: err.message });
   }
 };
+
+//new routes
+// For delivery person to view active deliveries and update earnings
+export const getActiveDeliveries = async (req, res) => {
+  try {
+    const { deliveryPersonId } = req.params;
+    const activeDeliveries = await Delivery.find({ 
+      deliveryPersonId, 
+      status: { $ne: "delivered" } 
+    });
+    
+    res.status(200).json(activeDeliveries);
+  } catch (err) {
+    res.status(500).json({ 
+      message: "Error fetching active deliveries", 
+      error: err.message 
+    });
+  }
+};
+
+// For delivery person to update their earnings
+export const updateDeliveryEarnings = async (req, res) => {
+  try {
+    const { deliveryId } = req.params;
+    const { actualDeliveryTime, additionalFees } = req.body;
+
+    const delivery = await Delivery.findById(deliveryId);
+    if (!delivery) {
+      return res.status(404).json({ message: "Delivery not found" });
+    }
+
+    if (delivery.status !== "delivered") {
+      return res.status(400).json({ message: "Cannot update earnings for undelivered order" });
+    }
+
+    const updated = await Delivery.findByIdAndUpdate(
+      deliveryId,
+      { 
+        actualTime: actualDeliveryTime,
+        additionalFees: additionalFees || 0
+      },
+      { new: true }
+    );
+
+    // Update wallet in user service for the delivery person
+    try {
+      await axios.post(`http://user-service:5002/api/wallet/credit`, {
+        userId: delivery.deliveryPersonId,
+        amount: delivery.deliveryFee + (additionalFees || 0),
+        source: `Delivery #${deliveryId.substring(0, 8)}`
+      });
+    } catch (error) {
+      console.error("Failed to update wallet:", error.message);
+    }
+
+    res.status(200).json({ 
+      message: "Delivery earnings updated", 
+      delivery: updated 
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      message: "Error updating earnings", 
+      error: err.message 
+    });
+  }
+};
+
+// For admins to view all ongoing deliveries
+export const getAllActiveDeliveries = async (req, res) => {
+  try {
+    const activeDeliveries = await Delivery.find({ 
+      status: { $ne: "delivered" } 
+    })
+    .populate('userId', 'name email phone')
+    .populate('deliveryPersonId', 'name email phone')
+    .sort({ createdAt: -1 });
+    
+    res.status(200).json(activeDeliveries);
+  } catch (err) {
+    res.status(500).json({ 
+      message: "Error fetching active deliveries", 
+      error: err.message 
+    });
+  }
+};
+
+// For customer to rate delivery
+export const rateDelivery = async (req, res) => {
+  try {
+    const { deliveryId } = req.params;
+    const { rating, feedback } = req.body;
+
+    const delivery = await Delivery.findById(deliveryId);
+    if (!delivery) {
+      return res.status(404).json({ message: "Delivery not found" });
+    }
+
+    if (delivery.status !== "delivered") {
+      return res.status(400).json({ message: "Cannot rate undelivered order" });
+    }
+
+    const updated = await Delivery.findByIdAndUpdate(
+      deliveryId,
+      { 
+        rating,
+        feedback
+      },
+      { new: true }
+    );
+
+    // Update delivery person's rating in user service
+    try {
+      await axios.post(`http://user-service:5002/api/users/rating`, {
+        userId: delivery.deliveryPersonId,
+        rating,
+        deliveryId
+      });
+    } catch (error) {
+      console.error("Failed to update delivery person rating:", error.message);
+    }
+
+    // Notify delivery person about new rating
+    await sendNotification(
+      delivery.deliveryPersonId,
+      "push",
+      `You received a ${rating}-star rating for your recent delivery`
+    );
+
+    res.status(200).json({ 
+      message: "Delivery rated successfully", 
+      delivery: updated 
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      message: "Error rating delivery", 
+      error: err.message 
+    });
+  }
+};
+
+// Automatically assign delivery to nearest available delivery person
+export const autoAssignDelivery = async (req, res) => {
+  try {
+    const { orderId, userId, deliveryAddress, deliveryFee, restaurantLocation } = req.body;
+
+    // Call location service to find nearest available delivery person
+    let deliveryPersonId;
+    try {
+      const { data } = await axios.post(`http://location-tracker:5009/api/nearest-agent`, {
+        originLat: restaurantLocation.latitude,
+        originLng: restaurantLocation.longitude,
+        maxDistance: 5000, // 5km radius
+        status: "available"
+      });
+      
+      deliveryPersonId = data.agentId;
+    } catch (error) {
+      console.error("Failed to find nearest delivery person:", error.message);
+      return res.status(404).json({ message: "No available delivery persons nearby" });
+    }
+
+    const delivery = await Delivery.create({
+      orderId,
+      deliveryPersonId,
+      userId,
+      deliveryAddress,
+      deliveryFee,
+    });
+
+    // Notify delivery person
+    await sendNotification(
+      deliveryPersonId,
+      "push",
+      `New delivery assigned: Order #${orderId.substring(0, 8)}`
+    );
+
+    // Notify customer
+    await sendNotification(
+      userId,
+      "push",
+      `Your order has been assigned to a delivery person`
+    );
+
+    // Emit socket event
+    io.emit("delivery_assigned", {
+      deliveryId: delivery._id,
+      status: delivery.status,
+      orderId: delivery.orderId,
+    });
+
+    res.status(201).json({ message: "Delivery auto-assigned", delivery });
+  } catch (err) {
+    res.status(500).json({ 
+      message: "Error auto-assigning delivery", 
+      error: err.message 
+    });
+  }
+};
+
+// Get delivery person earnings history
+export const getDeliveryEarnings = async (req, res) => {
+  try {
+    const { deliveryPersonId } = req.params;
+    const { startDate, endDate } = req.query;
+    
+    let query = { 
+      deliveryPersonId,
+      status: "delivered"
+    };
+    
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+    
+    const deliveries = await Delivery.find(query);
+    
+    // Calculate total earnings
+    const totalEarnings = deliveries.reduce((total, delivery) => {
+      return total + delivery.deliveryFee + (delivery.additionalFees || 0);
+    }, 0);
+    
+    res.status(200).json({
+      deliveries,
+      totalEarnings,
+      count: deliveries.length
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      message: "Error fetching earnings", 
+      error: err.message 
+    });
+  }
+};
