@@ -80,95 +80,95 @@ app.post("/api/location", async (req, res) => {
   }
 });
 
-// Add endpoint to find nearest available delivery person
-app.post("/api/nearest-agent", async (req, res) => {
-  try {
-    const {
-      originLat,
-      originLng,
-      maxDistance = 5000,
-      status = "available",
-    } = req.body;
+// // Add endpoint to find nearest available delivery person
+// app.post("/api/nearest-agent", async (req, res) => {
+//   try {
+//     const {
+//       originLat,
+//       originLng,
+//       maxDistance = 5000,
+//       status = "available",
+//     } = req.body;
 
-    // Find all delivery agents with recent location updates (active in last 10 minutes)
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-    const agents = await Location.find({
-      updatedAt: { $gte: tenMinutesAgo },
-    });
+//     // Find all delivery agents with recent location updates (active in last 10 minutes)
+//     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+//     const agents = await Location.find({
+//       updatedAt: { $gte: tenMinutesAgo },
+//     });
 
-    if (agents.length === 0) {
-      return res.status(404).json({ message: "No active agents found" });
-    }
+//     if (agents.length === 0) {
+//       return res.status(404).json({ message: "No active agents found" });
+//     }
 
-    // Calculate distances and find nearest
-    let nearestAgent = null;
-    let shortestDistance = Infinity;
+//     // Calculate distances and find nearest
+//     let nearestAgent = null;
+//     let shortestDistance = Infinity;
 
-    for (const agent of agents) {
-      // Check if the agent is available in the user service
-      try {
-        const { data } = await axios.get(
-          `http://user-service:5002/api/users/${agent.agentId}/status`
-        );
-        if (data.status !== status) continue;
+//     for (const agent of agents) {
+//       // Check if the agent is available in the user service
+//       try {
+//         const { data } = await axios.get(
+//           `http://user-service:5002/api/users/${agent.agentId}/status`
+//         );
+//         if (data.status !== status) continue;
 
-        // Calculate distance using Haversine formula
-        const distance = calculateDistance(
-          originLat,
-          originLng,
-          agent.latitude,
-          agent.longitude
-        );
+//         // Calculate distance using Haversine formula
+//         const distance = calculateDistance(
+//           originLat,
+//           originLng,
+//           agent.latitude,
+//           agent.longitude
+//         );
 
-        if (distance < shortestDistance && distance <= maxDistance) {
-          shortestDistance = distance;
-          nearestAgent = agent;
-        }
-      } catch (error) {
-        console.error(
-          `Error checking agent ${agent.agentId} status:`,
-          error.message
-        );
-      }
-    }
+//         if (distance < shortestDistance && distance <= maxDistance) {
+//           shortestDistance = distance;
+//           nearestAgent = agent;
+//         }
+//       } catch (error) {
+//         console.error(
+//           `Error checking agent ${agent.agentId} status:`,
+//           error.message
+//         );
+//       }
+//     }
 
-    if (!nearestAgent) {
-      return res
-        .status(404)
-        .json({ message: "No available agents within range" });
-    }
+//     if (!nearestAgent) {
+//       return res
+//         .status(404)
+//         .json({ message: "No available agents within range" });
+//     }
 
-    res.status(200).json({
-      agentId: nearestAgent.agentId,
-      distance: shortestDistance,
-      location: {
-        latitude: nearestAgent.latitude,
-        longitude: nearestAgent.longitude,
-      },
-    });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error finding nearest agent", error: err.message });
-  }
-});
+//     res.status(200).json({
+//       agentId: nearestAgent.agentId,
+//       distance: shortestDistance,
+//       location: {
+//         latitude: nearestAgent.latitude,
+//         longitude: nearestAgent.longitude,
+//       },
+//     });
+//   } catch (err) {
+//     res
+//       .status(500)
+//       .json({ message: "Error finding nearest agent", error: err.message });
+//   }
+// });
 
-// Helper function to calculate distance between two points using Haversine formula
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3; // Earth's radius in meters
-  const φ1 = (lat1 * Math.PI) / 180;
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+// // Helper function to calculate distance between two points using Haversine formula
+// function calculateDistance(lat1, lon1, lat2, lon2) {
+//   const R = 6371e3; // Earth's radius in meters
+//   const φ1 = (lat1 * Math.PI) / 180;
+//   const φ2 = (lat2 * Math.PI) / 180;
+//   const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+//   const Δλ = ((lon2 - lon1) * Math.PI) / 180;
 
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//   const a =
+//     Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+//     Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-  return R * c; // distance in meters
-}
+//   return R * c; // distance in meters
+// }
 
-server.listen(5009, () =>
-  console.log("🚀 Location-Tracker running on port 5009")
-);
+// server.listen(5009, () =>
+//   console.log("🚀 Location-Tracker running on port 5009")
+// );

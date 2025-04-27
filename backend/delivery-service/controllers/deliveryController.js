@@ -111,7 +111,7 @@ export const updateDeliveryStatus = async (req, res) => {
 
     const updated = await Delivery.findByIdAndUpdate(
       deliveryId,
-      { status, "locationUpdate.updatedAt": Date.now() },
+      { status },
       { new: true }
     );
 
@@ -138,7 +138,7 @@ export const updateDeliveryStatus = async (req, res) => {
     io.to(`delivery_${deliveryId}`).emit("delivery_status_update", {
       deliveryId: updated._id,
       status: updated.status,
-      updatedAt: updated.locationUpdate.updatedAt,
+      updatedAt: updated.updatedAt,
     });
 
     // If status is "delivered", notify order service
@@ -155,15 +155,14 @@ export const updateDeliveryStatus = async (req, res) => {
       }
     }
 
-    res
-      .status(200)
-      .json({ message: "Delivery status updated", delivery: updated });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error updating status", error: err.message });
+    // ✅ now we send final response inside try block
+    res.status(200).json({ message: "Delivery status updated", delivery: updated });
+
+  } catch (err) { // catch the main try block
+    res.status(500).json({ message: "Error updating status", error: err.message });
   }
 };
+
 
 // Update GPS location of delivery person
 // export const updateDeliveryLocation = async (req, res) => {
@@ -353,11 +352,36 @@ export const getAllActiveDeliveries = async (req, res) => {
     const activeDeliveries = await Delivery.find({ 
       status: { $ne: "delivered" } 
     })
-    .populate('userId', 'name email phone')
-    .populate('deliveryPersonId', 'name email phone')
     .sort({ createdAt: -1 });
     
-    res.status(200).json(activeDeliveries);
+    // Enhance deliveries with user data from user-service
+    const enhancedDeliveries = await Promise.all(activeDeliveries.map(async (delivery) => {
+      const deliveryObj = delivery.toObject();
+      
+      try {
+        // Get user data
+        const userResponse = await axios.get(`http://user-service:5002/api/users/${delivery.userId}`);
+        deliveryObj.userDetails = {
+          name: userResponse.data.name,
+          email: userResponse.data.email,
+          phone: userResponse.data.phone
+        };
+        
+        // Get delivery person data
+        const deliveryPersonResponse = await axios.get(`http://user-service:5002/api/users/${delivery.deliveryPersonId}`);
+        deliveryObj.deliveryPersonDetails = {
+          name: deliveryPersonResponse.data.name,
+          email: deliveryPersonResponse.data.email,
+          phone: deliveryPersonResponse.data.phone
+        };
+      } catch (error) {
+        console.error("Failed to fetch user details:", error.message);
+      }
+      
+      return deliveryObj;
+    }));
+    
+    res.status(200).json(enhancedDeliveries);
   } catch (err) {
     res.status(500).json({ 
       message: "Error fetching active deliveries", 
