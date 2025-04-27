@@ -69,14 +69,15 @@ export const login = async (req, res) => {
 // Get user's favorite restaurants
 export const getFavoriteRestaurants = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const user = await User.findById(userId).populate('favoriteRestaurants');
-    
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
-    
-    res.status(200).json({ favorites: user.favoriteRestaurants });
+
+    // Only return the list of restaurant IDs
+    res.status(200).json({ favoriteRestaurants: user.favoriteRestaurants });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -85,20 +86,20 @@ export const getFavoriteRestaurants = async (req, res) => {
 // Add restaurant to favorites
 export const addToFavorites = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const { restaurantId } = req.body;
-    
+
     const user = await User.findByIdAndUpdate(
       userId,
       { $addToSet: { favoriteRestaurants: restaurantId } },
       { new: true }
     );
-    
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
-    
-    res.status(200).json({ message: 'Restaurant added to favorites', user });
+
+    res.status(200).json({ message: "Restaurant added to favorites", user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -107,20 +108,22 @@ export const addToFavorites = async (req, res) => {
 // Remove restaurant from favorites
 export const removeFromFavorites = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const { restaurantId } = req.params;
-    
+
     const user = await User.findByIdAndUpdate(
       userId,
       { $pull: { favoriteRestaurants: restaurantId } },
       { new: true }
     );
-    
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
-    
-    res.status(200).json({ message: 'Restaurant removed from favorites', user });
+
+    res
+      .status(200)
+      .json({ message: "Restaurant removed from favorites", user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -129,15 +132,15 @@ export const removeFromFavorites = async (req, res) => {
 // Update user profile
 export const updateProfile = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const { name, phone, image, address } = req.body;
-    
+
     const user = await User.findById(userId);
-    
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
-    
+
     if (name) user.name = name;
     if (phone) user.phone = phone;
     if (image) user.image = image;
@@ -149,14 +152,16 @@ export const updateProfile = async (req, res) => {
         user.address.push(address);
       }
     }
-    
+
     await user.save();
-    
+
     // Return user without password
     const userResponse = user.toObject();
     delete userResponse.password;
-    
-    res.status(200).json({ message: 'Profile updated successfully', user: userResponse });
+
+    res
+      .status(200)
+      .json({ message: "Profile updated successfully", user: userResponse });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -167,17 +172,17 @@ export const getAllUsers = async (req, res) => {
   try {
     const { role, isActive, search } = req.query;
     const filter = {};
-    
+
     if (role) filter.role = role;
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
+    if (isActive !== undefined) filter.isActive = isActive === "true";
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
       ];
     }
-    
-    const users = await User.find(filter).select('-password');
+
+    const users = await User.find(filter).select("-password");
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -189,20 +194,22 @@ export const toggleUserStatus = async (req, res) => {
   try {
     const { userId } = req.params;
     const { isActive } = req.body;
-    
+
     const user = await User.findByIdAndUpdate(
       userId,
       { isActive },
       { new: true }
-    ).select('-password');
-    
+    ).select("-password");
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
-    
-    res.status(200).json({ 
-      message: isActive ? 'User activated successfully' : 'User blocked successfully', 
-      user 
+
+    res.status(200).json({
+      message: isActive
+        ? "User activated successfully"
+        : "User blocked successfully",
+      user,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
