@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/contexts/auth-context"
+import toast from "react-hot-toast"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -22,19 +23,50 @@ export function LoginForm() {
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      await login(email, password)
-      router.push("/") // Redirect to home page after successful login
-    } catch (error) {
-      console.error("Login failed:", error)
-      // Error is handled by the auth context
+      const res = await fetch("http://localhost:5007/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      toast.success("Login successful");
+
+      // Optionally store token if needed
+      if (rememberMe) {
+        localStorage.setItem("token", data.token);
+      } else {
+        sessionStorage.setItem("token", data.token);
+      }
+
+      // Redirect based on user role
+      if (data.role === "customer") {
+        router.push("/");
+      } else if (data.role === "delivery_person") {
+        router.push("/delivery/dashboard");
+      } else if (data.role === "restaurant_admin") {
+        router.push("/restaurant/dashboard");
+      } else {
+        toast.error("Unknown role");
+      }
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      toast.error(error.message || "Login failed");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Card className="w-full">

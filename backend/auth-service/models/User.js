@@ -3,10 +3,10 @@ import bcrypt from 'bcryptjs';
 
 // Embedded address schema
 const addressSchema = new mongoose.Schema({
-  addressLine1: { type: String, required: true },
-  addressLine2: { type: String, required: true },
-  homeTown: { type: String, required: true },
-  postalCode: { type: Number, required: true },
+  addressLine1: { type: String },
+  addressLine2: { type: String },
+  homeTown: { type: String },
+  postalCode: { type: Number },
 });
 
 // User schema
@@ -14,7 +14,6 @@ const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
   },
   email: {
     type: String,
@@ -27,7 +26,6 @@ const userSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    required: true,
   },
   phone: {
     type: String,

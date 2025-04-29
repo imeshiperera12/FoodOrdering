@@ -1,7 +1,7 @@
 import type React from "react"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "react-hot-toast";
 import { Providers } from "./providers"
 import "./globals.css"
 
@@ -21,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        
         <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark">
           <Providers>
             {children}
