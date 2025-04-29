@@ -8,6 +8,7 @@ import {
   updateProfile,
   getAllUsers,
   toggleUserStatus,
+  getCurrentUser
 } from "../controllers/authController.js";
 import User from "../models/User.js";
 import authorizeRoles from "../middleware/authorizeRoles.js";
@@ -35,6 +36,9 @@ router.patch(
   authorizeRoles("admin"),
   toggleUserStatus
 );
+
+// Get current user
+router.get("/me", authMiddleware, getCurrentUser);
 
 // Last: Get single user by ID (for notification-service)
 router.get("/:id", async (req, res) => {

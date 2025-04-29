@@ -58,9 +58,19 @@ export const login = async (req, res) => {
       process.env.JWT_SECRET
     );
 
-    res
-      .status(200)
-      .json({ message: "Login successful", token, role: user.role });
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        image: user.image,
+        phone: user.phone,
+        address: user.address,
+      }
+    });
   } catch (err) {
     res.status(500).json({ message: "Login error", error: err.message });
   }
@@ -215,3 +225,19 @@ export const toggleUserStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Get Current Logged-in User
+export const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
