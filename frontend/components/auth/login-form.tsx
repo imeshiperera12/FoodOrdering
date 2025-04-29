@@ -56,7 +56,7 @@ export function LoginForm() {
       } else if (data.role === "delivery_person") {
         router.push("/delivery/dashboard");
       } else if (data.role === "restaurant_admin") {
-        router.push("/restaurant/dashboard");
+        router.push("/restaurants/dashboard");
       } else {
         toast.error("Unknown role");
       }
