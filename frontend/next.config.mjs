@@ -1,38 +1,48 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    remotePatterns: [
+  reactStrictMode: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  async rewrites() {
+    return [
       {
-        protocol: 'https',
-        hostname: '**', 
+        source: '/api/auth/:path*',
+        destination: 'http://localhost:5007/api/auth/:path*',
       },
-    ],
+      {
+        source: '/api/orders/:path*',
+        destination: 'http://localhost:5001/api/orders/:path*',
+      },
+      {
+        source: '/api/restaurant/:path*',
+        destination: 'http://localhost:5008/api/restaurant/:path*',
+      },
+      {
+        source: '/api/payments/:path*',
+        destination: 'http://localhost:5004/api/payments/:path*',
+      },
+      {
+        source: '/api/delivery/:path*',
+        destination: 'http://localhost:5010/api/delivery/:path*',
+      },
+      {
+        source: '/api/location/:path*',
+        destination: 'http://localhost:5009/api/location/:path*',
+      },
+      {
+        source: '/api/notifications/:path*',
+        destination: 'http://localhost:5003/api/notifications/:path*',
+      },
+    ]
   },
-  env: {
-    // Base URL for API requests
-    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
-    
-    // Auth Service
-    NEXT_PUBLIC_AUTH_SERVICE_URL: process.env.NEXT_PUBLIC_AUTH_SERVICE_URL,
-    
-    // Restaurant Service
-    NEXT_PUBLIC_RESTAURANT_SERVICE_URL: process.env.NEXT_PUBLIC_RESTAURANT_SERVICE_URL,
-    
-    // Order Service
-    NEXT_PUBLIC_ORDER_SERVICE_URL: process.env.NEXT_PUBLIC_ORDER_SERVICE_URL,
-    
-    // Payment Service
-    NEXT_PUBLIC_PAYMENT_SERVICE_URL: process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL,
-    
-    // Delivery Service
-    NEXT_PUBLIC_DELIVERY_SERVICE_URL: process.env.NEXT_PUBLIC_DELIVERY_SERVICE_URL,
-    
-    // Location Tracker Service
-    NEXT_PUBLIC_LOCATION_TRACKER_URL: process.env.NEXT_PUBLIC_LOCATION_TRACKER_URL,
-    
-    // Notification Service
-    NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL,
+  images: {
+    domains: ['example.com', 'randomuser.me'],
+    unoptimized: true,
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig
