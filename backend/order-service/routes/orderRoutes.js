@@ -213,10 +213,11 @@ router.get("/", authMiddleware, authorizeRoles("admin"), async (req, res) => {
 router.get(
   "/:id",
   authMiddleware,
-  authorizeRoles("admin"),
+  authorizeRoles("admin", "restaurant_admin"),
   async (req, res) => {
     try {
-      const order = await Order.findById(req.params.id);
+      const { restaurantId } = req.params;
+      const order = await Order.findById({ restaurantId: restaurantId });
       if (!order) return res.status(404).json({ error: "Order not found" });
       res.status(200).json(order);
     } catch (error) {
@@ -318,6 +319,7 @@ router.get(
   authorizeRoles("restaurant_admin", "admin"),
   async (req, res) => {
     try {
+      console.log("Fetching stats for restaurant:", req.params.restaurantId);
       const { restaurantId } = req.params;
 
       const totalOrders = await Order.countDocuments({ restaurantId });

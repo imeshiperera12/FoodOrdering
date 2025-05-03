@@ -27,7 +27,7 @@ deliveryRoutes.get("/track/:orderId", authMiddleware, authorizeRoles('customer')
 // New routes
 deliveryRoutes.post("/auto-assign", authMiddleware, authorizeRoles('admin', 'system'), autoAssignDelivery);
 deliveryRoutes.get("/active/driver/:deliveryPersonId", authMiddleware, authorizeRoles('delivery_person'), getActiveDeliveries);
-deliveryRoutes.get("/active/all", authMiddleware, authorizeRoles('admin'), getAllActiveDeliveries);
+deliveryRoutes.get("/active/all", authMiddleware, authorizeRoles('admin', 'delivery_person'), getAllActiveDeliveries);
 deliveryRoutes.put("/earnings/:deliveryId", authMiddleware, authorizeRoles('delivery_person'), updateDeliveryEarnings);
 deliveryRoutes.get("/earnings/:deliveryPersonId", authMiddleware, authorizeRoles('delivery_person', 'admin'), getDeliveryEarnings);
 deliveryRoutes.post("/rate/:deliveryId", authMiddleware, authorizeRoles('customer'), rateDelivery);

@@ -43,35 +43,56 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Better logging to debug the login process
+    console.log(`Attempting login for email: ${email}`);
+
     const user = await User.findOne({ email });
     if (!user) {
+      console.log(`Login failed: User with email ${email} not found`);
       return res.status(404).json({ message: "User not found" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log(`Login failed: Invalid password for user ${email}`);
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET
-    );
+    // Check if JWT_SECRET is properly defined
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not defined in environment variables");
+      return res.status(500).json({ message: "Server configuration error" });
+    }
 
-    res.status(200).json({
-      message: "Login successful",
-      token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        image: user.image,
-        phone: user.phone,
-        address: user.address,
-      }
-    });
+    // Try/catch for token generation
+    try {
+      const token = jwt.sign(
+        { userId: user._id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' } // Add expiration for better security
+      );
+
+      console.log(`Login successful for user: ${user.email}`);
+      
+      res.status(200).json({
+        message: "Login successful",
+        token,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          image: user.image,
+          phone: user.phone,
+          address: user.address,
+        }
+      });
+    } catch (tokenError) {
+      console.error("Token generation failed:", tokenError);
+      res.status(500).json({ message: "Error generating authentication token", error: tokenError.message });
+    }
   } catch (err) {
+    console.error("Login error:", err);
     res.status(500).json({ message: "Login error", error: err.message });
   }
 };

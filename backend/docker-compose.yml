@@ -31,6 +31,7 @@ services:
       - ./restaurant-service/.env
     volumes:
       - ./restaurant-service:/app
+      - /app/node_modules
     working_dir: /app
     restart: always
     networks:
@@ -45,6 +46,7 @@ services:
       - ./auth-service/.env
     volumes:
       - ./auth-service:/app
+      - /app/node_modules
     working_dir: /app
     restart: always
     networks:
@@ -59,6 +61,7 @@ services:
       - ./delivery-service/.env
     volumes:
       - ./delivery-service:/app
+      - /app/node_modules
     working_dir: /app
     restart: always
     networks:
@@ -73,6 +76,7 @@ services:
       - ./notification-service/.env
     volumes:
       - ./notification-service:/app
+      - /app/node_modules
     working_dir: /app
     restart: always
     networks:
@@ -85,6 +89,7 @@ services:
       - "5009:5009"
     volumes:
       - ./location-tracker:/app
+      - /app/node_modules
     working_dir: /app
     restart: always
     networks:

@@ -1,9 +1,20 @@
 import Restaurant from "../models/Restaurant.js";
+import mongoose from 'mongoose';
 
 // Create a new restaurant
 export const createRestaurant = async (req, res) => {
   try {
+    console.log('Request body:', req.body);
     const { name, address, contactNumber, ownerId, cuisine } = req.body;
+
+    if (!name || !address || !contactNumber || !cuisine || !ownerId) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(ownerId)) {
+      return res.status(400).json({ message: "Invalid ownerId format" });
+    }
+
     const newRestaurant = await Restaurant.create({
       name,
       address,
@@ -15,6 +26,7 @@ export const createRestaurant = async (req, res) => {
       .status(201)
       .json({ message: "Restaurant created", restaurant: newRestaurant });
   } catch (err) {
+    console.error('Error creating restaurant:', err);
     res
       .status(500)
       .json({ message: "Error creating restaurant", error: err.message });
@@ -128,13 +140,19 @@ export const verifyRestaurant = async (req, res) => {
 // Get all restaurants with optional filters
 export const getRestaurants = async (req, res) => {
   try {
-    const { query, cuisine, rating, location, page = 1, limit = 10 } = req.query;
+    const { query, cuisine, rating, location, ownerId, page = 1, limit = 10 } = req.query;
 
-    const hasFilters = query || cuisine || rating || location;
+    const filter = {};
 
-    const filter = hasFilters
-      ? { isAvailable: true, isVerified: true }
-      : {}; // Show all if no filters
+    // Filter by owner ID (for restaurant owner dashboard)
+    if (ownerId) {
+      filter.ownerId = ownerId;
+    } else {
+      // Only apply availability and verification filters for public restaurant listings
+      // not when a restaurant owner is looking up their own restaurant
+      filter.isAvailable = true;
+      filter.isVerified = true;
+    }
 
     // Search by restaurant name
     if (query) {
@@ -162,6 +180,7 @@ export const getRestaurants = async (req, res) => {
 
     res.status(200).json(restaurants);
   } catch (error) {
+    console.error('Error fetching restaurants:', error);
     res.status(500).json({
       message: "Error fetching restaurants",
       error: error.message,
@@ -172,6 +191,8 @@ export const getRestaurants = async (req, res) => {
 // Get a single restaurant by ID
 export const getRestaurantById = async (req, res) => {
   try {
+    console.log("route hitttt"); // Debugging line
+    console.log("Fetching restaurant by ID:", req.params.id); // Debugging line
     const { id } = req.params;
     const restaurant = await Restaurant.findById(id);
 

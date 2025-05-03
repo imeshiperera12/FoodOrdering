@@ -63,7 +63,7 @@ const restaurantSchema = new mongoose.Schema({
   },
   isVerified: {
     type: Boolean,
-    default: false,
+    default: true,
   },
   menu: [menuItemSchema],
   ownerId: {
